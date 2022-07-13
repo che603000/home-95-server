@@ -1,82 +1,60 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CronJob } from 'cron';
-import { SchedulerRegistry } from '@nestjs/schedule';
+import { connect, Client } from 'mqtt';
+
+const MQQT = {
+  //connect: 'ws://192.168.1.5:18883/mqtt',
+  connect: 'mqtt://192.168.1.5',
+};
 
 @Injectable()
-export class TaskService {
-  private readonly logger = new Logger(TaskService.name);
+export class MqttService {
+  private readonly logger = new Logger(MqttService.name);
+  private client: Client;
 
-  constructor(
-    private schedulerRegistry: SchedulerRegistry, //private logger: LoggerService,
-  ) {
-    this.addTask('test', '00:46', 1);
-    this.removeTasks('test');
-    this.getCrons();
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  constructor() {
+    this.connect();
   }
 
-  addTask(name: string, time: string, wait: number) {
-    const [hours, minutes] = time.split(':').map((t) => parseInt(t));
-
-    this.addCronJob(
-      `${name}:start`,
-      this.createCronTime(hours, minutes),
-      () => {
-        console.log('start');
-      },
-    );
-    this.addCronJob(
-      `${name}:stop`,
-      this.createCronTime(hours, minutes, wait),
-      () => {
-        console.log('stop');
-      },
+  activeLight(value: boolean) {
+    this.client.publish(
+      '/devices/wb-gpio/controls/A2_OUT/on',
+      value ? '1' : '0',
+      (err, pak) => console.log(err, pak),
     );
   }
 
-  removeTasks(name: string) {
-    const jobs = this.schedulerRegistry.getCronJobs();
-    jobs.forEach((value, key) => {
-      if (key.indexOf(name) === 0) this.schedulerRegistry.deleteCronJob(key);
-    });
-  }
-
-  createCronTime(hours: number, minutes: number, waitMinutes = 0) {
-    const date = new Date(
-      hours * 60 * 60 * 1000 + (minutes + waitMinutes) * 60 * 1000,
+  activeWater(key: string, value: boolean) {
+    // key [K1, K2, ... K6]
+    this.client.publish(
+      `/devices/wb-mr6c_159/controls/${key}/on`,
+      value ? '1' : '0',
     );
-    const h = date.getUTCHours();
-    const m = date.getUTCMinutes();
-    return `0 ${m} ${h} * * *`;
   }
 
-  addCronJob(name: string, cronTime: string, handler: () => void) {
-    const job = new CronJob(cronTime, handler);
-
-    this.schedulerRegistry.addCronJob(name, job);
-    job.start();
-    this.logger.warn(`Task ${name} added cronTime=${cronTime}`);
+  connect() {
+    this.client = connect(MQQT.connect);
+    this.client.on('connect', (opt) => this.onConnect(opt));
+    this.client.on('error', (err) => this.onError(err));
+    this.client.on('message', (topic, message) =>
+      this.onMessage(topic, message),
+    );
   }
 
-  getCrons() {
-    const jobs = this.schedulerRegistry.getCronJobs();
-    jobs.forEach((value, key) => {
-      let next;
-      try {
-        next = value.nextDates();
-      } catch (e) {
-        next = 'error: next fire date is in the past!';
-      }
-      this.logger.log(`job: ${key} -> next: ${next}`);
-    });
+  onConnect(opt: any) {
+    console.log(opt);
+    this.client.subscribe(['/devices/wb-gpio/controls/#']);
+    //this.client.subscribe(['/devices/wb-gpio/#', '/devices/wb-w1/controls/#']);
   }
 
-  deleteCron(name: string) {
-    this.schedulerRegistry.deleteCronJob(name);
-    this.logger.warn(`job ${name} deleted!`);
+  onError(err: Error) {
+    console.log(err);
   }
 
-  // @Interval(10000)
-  // handleInterval() {
-  //   this.logger.debug('Called every 10 seconds');
-  // }
+  onMessage(topic: string, message: Buffer) {
+    const data = message.toString();
+    //this.logger.warn(`${topic} = ${data}`);
+    //if (/^\/devices\/wb-gpio\/controls\/A[1234]_OUT$/.test(topic))
+    //console.log(`${topic} = ${data}`);
+  }
 }

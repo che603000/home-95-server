@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { TaskService } from './task.service';
+import { MqttService } from './mqtt.service';
 
 @Module({
   imports: [],
-  providers: [TaskService],
-  exports: [TaskService],
+  providers: [MqttService],
+  exports: [MqttService],
 })
-export class TaskModule {}
+export class MqttModule {}
