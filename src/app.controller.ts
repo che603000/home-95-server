@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
 import { AppService } from './app.service';
 import { MqttService } from './mqtt/mqtt.service';
 import { ITask } from './task/task.interface';
@@ -20,8 +20,23 @@ export class AppController {
     return this.appService.getTask(id);
   }
 
+  @Get('/task')
+  getAllTas() {
+    return this.appService.getAllTask();
+  }
+
   @Post('/task')
-  saveTask(@Body() data: ITask) {
-    return this.appService.saveTask(data);
+  createTask(@Body() data: ITask) {
+    return this.appService.createTask(data);
+  }
+
+  @Put('/task')
+  updateTask(@Body() data: ITask) {
+    return this.appService.updateTask(data);
+  }
+
+  @Delete('/task/:id')
+  removeTask(@Param('id') id: string) {
+    return this.appService.removeTask(id);
   }
 }

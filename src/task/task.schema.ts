@@ -10,6 +10,15 @@ export class Task implements ITask {
   id: string;
 
   @Prop()
+  title: string;
+
+  @Prop()
+  topic: string;
+
+  @Prop()
+  type: string;
+
+  @Prop()
   disable: boolean;
 
   @Prop([String])
@@ -20,3 +29,11 @@ export class Task implements ITask {
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);
+
+TaskSchema.set('toJSON', {
+  transform: function (doc, ret) {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+  },
+});
