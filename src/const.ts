@@ -14,3 +14,8 @@ META.set(SENSOR_TEMP_HOT, { title: 'подача отопление' });
 META.set(SENSOR_TEMP_HOT_BACK, { title: 'обратка отопление' });
 META.set(BOARD_TEMP, { title: 'температура в щите' });
 META.set(CPU_TEMP, { title: 'температура CPU' });
+
+export const TELEGRAM = {
+  token: '1581137233:AAHXMgFXs81pjPIMfZ-SG4ZROOGtVPb79s8', // @home95_bot
+  nameBot: '@home95_bot',
+};

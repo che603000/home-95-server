@@ -4,6 +4,7 @@ import { MqttModule } from '../mqtt/mqtt.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Temp, TempSchema } from './temp.schema';
 import { TempController } from './temp.controller';
+import { TempBot } from './temp.bot';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { TempController } from './temp.controller';
     MqttModule,
   ],
   controllers: [TempController],
-  providers: [TempService],
+  providers: [TempService, TempBot],
   exports: [TempService],
 })
 export class TempModule {}

@@ -24,7 +24,6 @@ export class TempService {
     );
   }
 
-  /*
   @Cron(CronExpression.EVERY_10_MINUTES) // каждые 10 минут
   onCron() {
     const createDate = new Date();
@@ -45,7 +44,7 @@ export class TempService {
       this.store[key] = [];
     });
   }
-  */
+
   onMessage(topic: string, message: string) {
     const [key] = topic.split('/').reverse();
     this.store[key] = this.store[key] || [];
