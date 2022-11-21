@@ -1,82 +1,62 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { CronJob } from 'cron';
-import { SchedulerRegistry } from '@nestjs/schedule';
+import { Injectable } from '@nestjs/common';
+import { Task, TaskDocument } from './task.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { ITask } from './task.interface';
+import { ScheduleService } from '../schedule/schedule.service';
+import { MqttService } from '../mqtt/mqtt.service';
 
 @Injectable()
 export class TaskService {
-  private readonly logger = new Logger(TaskService.name);
-
   constructor(
-    private schedulerRegistry: SchedulerRegistry, //private logger: LoggerService,
+    @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+    private readonly mqttService: MqttService,
+    private readonly scheduleService: ScheduleService,
   ) {
-    this.addTask('test', '00:46', 1);
-    this.removeTasks('test');
-    this.getCrons();
-  }
-
-  addTask(name: string, time: string, wait: number) {
-    const [hours, minutes] = time.split(':').map((t) => parseInt(t));
-
-    this.addCronJob(
-      `${name}:start`,
-      this.createCronTime(hours, minutes),
-      () => {
-        console.log('start');
-      },
-    );
-    this.addCronJob(
-      `${name}:stop`,
-      this.createCronTime(hours, minutes, wait),
-      () => {
-        console.log('stop');
-      },
+    this.getAllTask().then((tasks: ITask[]) =>
+      tasks.forEach((task) => this.scheduleService.addTask(task)),
     );
   }
 
-  removeTasks(name: string) {
-    const jobs = this.schedulerRegistry.getCronJobs();
-    jobs.forEach((value, key) => {
-      if (key.indexOf(name) === 0) this.schedulerRegistry.deleteCronJob(key);
-    });
+  getTask(id: string): Promise<any> {
+    return this.taskModel.findById(id).then((doc) => (doc ? doc.toJSON() : {}));
   }
 
-  createCronTime(hours: number, minutes: number, waitMinutes = 0) {
-    const date = new Date(
-      hours * 60 * 60 * 1000 + (minutes + waitMinutes) * 60 * 1000,
-    );
-    const h = date.getUTCHours();
-    const m = date.getUTCMinutes();
-    return `0 ${m} ${h} * * *`;
+  async updateTask(data: ITask): Promise<any> {
+    const model = await this.taskModel.findById(data.id);
+    if (!model) throw new Error(`404 Not task`);
+    model.title = data.title;
+    model.type = data.type;
+    model.topic = data.topic;
+    model.startTime = data.startTime;
+    model.waitTime = data.waitTime;
+    model.disable = data.disable;
+    const doc = await model.save();
+    const task: ITask = doc.toJSON();
+    this.scheduleService.removeTasks(task.id);
+    //this.mqttService.activeTopic(task.topic, false);
+    this.scheduleService.addTask(task);
+    return task;
   }
 
-  addCronJob(name: string, cronTime: string, handler: () => void) {
-    const job = new CronJob(cronTime, handler);
-
-    this.schedulerRegistry.addCronJob(name, job);
-    job.start();
-    this.logger.warn(`Task ${name} added cronTime=${cronTime}`);
+  async createTask(data: ITask): Promise<any> {
+    const doc = await this.taskModel.create(data);
+    const task: ITask = doc.toJSON();
+    this.scheduleService.addTask(task);
+    return task;
   }
 
-  getCrons() {
-    const jobs = this.schedulerRegistry.getCronJobs();
-    jobs.forEach((value, key) => {
-      let next;
-      try {
-        next = value.nextDates();
-      } catch (e) {
-        next = 'error: next fire date is in the past!';
-      }
-      this.logger.log(`job: ${key} -> next: ${next}`);
-    });
+  async removeTask(id: string) {
+    const task = await this.getTask(id);
+    if (!task) return;
+    this.scheduleService.removeTasks(task.id);
+    this.mqttService.activeTopic(task.topic, false);
+    return this.taskModel.findByIdAndRemove(id);
   }
 
-  deleteCron(name: string) {
-    this.schedulerRegistry.deleteCronJob(name);
-    this.logger.warn(`job ${name} deleted!`);
+  async getAllTask() {
+    return this.taskModel
+      .find()
+      .then((docs) => docs.map((doc) => doc.toJSON()));
   }
-
-  // @Interval(10000)
-  // handleInterval() {
-  //   this.logger.debug('Called every 10 seconds');
-  // }
 }

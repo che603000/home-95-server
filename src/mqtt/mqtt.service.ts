@@ -9,7 +9,7 @@ const MQQT = {
 @Injectable()
 export class MqttService {
   private readonly logger = new Logger(MqttService.name);
-  private client: Client;
+  public client: Client;
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   constructor() {
@@ -24,26 +24,35 @@ export class MqttService {
     );
   }
 
-  activeWater(key: string, value: boolean) {
-    // key [K1, K2, ... K6]
-    this.client.publish(
-      `/devices/wb-mr6c_159/controls/${key}/on`,
-      value ? '1' : '0',
-    );
+  activeTopic(topic: string, value: boolean) {
+    this.client.publish(`${topic}/on`, value ? '1' : '0');
   }
 
   connect() {
     this.client = connect(MQQT.connect);
-    this.client.on('connect', (opt) => this.onConnect(opt));
+    this.client.on('connect', (opt) => this.onConnect());
     this.client.on('error', (err) => this.onError(err));
     this.client.on('message', (topic, message) =>
       this.onMessage(topic, message),
     );
   }
 
-  onConnect(opt: any) {
-    console.log(opt);
-    this.client.subscribe(['/devices/wb-gpio/controls/#']);
+  onConnect() {
+    //this.client.subscribe(['/devices/wb-gpio/controls/#']);
+    this.client.publish('/devices/server-home95/controls/GUARD/on', '1');
+    this.client.publish(
+      '/devices/server-home95/controls/PING',
+      Date.now().toString(),
+    );
+    setInterval(
+      () =>
+        this.client.publish(
+          '/devices/server-home95/controls/PING',
+          Date.now().toString(),
+        ),
+      1000 * 5,
+    );
+    //this.client.subscribe('/devices/server-home95/controls/#'/*, '/devices/wb-mr6c_159/controls/#'*/], () => 0)
     //this.client.subscribe(['/devices/wb-gpio/#', '/devices/wb-w1/controls/#']);
   }
 

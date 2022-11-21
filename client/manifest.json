@@ -1,0 +1,11 @@
+{
+  "id": "home-95 ver 0.0.1",
+  "short_name": "Home 95",
+  "name": "",
+  "icons": [
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
