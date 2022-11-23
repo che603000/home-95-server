@@ -9,13 +9,19 @@ export const TOPIC_HWMON = '/devices/hwmon/controls';
 export const BOARD_TEMP = 'Board Temperature';
 export const CPU_TEMP = 'CPU Temperature';
 
-META.set(SENSOR_TEMP_OUTDOOR, { title: 'темп улица' });
-META.set(SENSOR_TEMP_HOT, { title: 'подача отопление' });
-META.set(SENSOR_TEMP_HOT_BACK, { title: 'обратка отопление' });
-META.set(BOARD_TEMP, { title: 'температура в щите' });
-META.set(CPU_TEMP, { title: 'температура CPU' });
+META.set(SENSOR_TEMP_OUTDOOR, { title: 'Темп улица' });
+META.set(SENSOR_TEMP_HOT, { title: 'Подача отопление' });
+META.set(SENSOR_TEMP_HOT_BACK, { title: 'Обратка отопление' });
+META.set(BOARD_TEMP, { title: 'Температура в щите' });
+META.set(CPU_TEMP, { title: 'Температура CPU' });
 
 export const TELEGRAM = {
   token: '1581137233:AAHXMgFXs81pjPIMfZ-SG4ZROOGtVPb79s8', // @home95_bot
   nameBot: '@home95_bot',
 };
+
+export const ALARM_TEMP = 30; // темп тревоги (нижний предел)
+export const ALARM_LIST = [
+  418211324, // che603000
+  -341802588, // group Che
+];

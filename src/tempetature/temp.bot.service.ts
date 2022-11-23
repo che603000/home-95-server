@@ -1,20 +1,17 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { META, TELEGRAM } from '../const';
+import { ALARM_LIST, ALARM_TEMP, META, TELEGRAM } from '../const';
 import { InjectModel } from '@nestjs/mongoose';
 import { Temp, TempDocument } from './temp.schema';
 import { Model } from 'mongoose';
 import { Telegraf } from 'telegraf';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const QuickChart = require('quickchart-js');
-//import { QuickChart } from 'quickchart-js';
-
-//import { Cron, CronExpression } from '@nestjs/schedule';
 
 const DEVICES = Array.from(META);
 
 @Injectable()
-export class TempBot implements OnApplicationBootstrap {
-  private readonly logger = new Logger(TempBot.name);
+export class TempBotService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(TempBotService.name);
   private bot: Telegraf;
 
   constructor(
@@ -27,12 +24,12 @@ export class TempBot implements OnApplicationBootstrap {
     this.bot.command('temp', (ctx) => this.cmdMainTemp(ctx));
   }
 
-  cmdHelp(ctx) {
+  async cmdHelp(ctx) {
     const text = [
       '<b>Поддерживаются следующие команды:</b>',
-      '/temp - Важные графики температуры ###',
+      '/temp - Важные графики температуры',
       ...DEVICES.map(
-        ([key, item], index) => `/temp_${index.toString()} - ${item[`title`]}`,
+        ([, item], index) => `/temp_${index.toString()} - ${item[`title`]}`,
       ),
     ].join('\n');
 
@@ -176,10 +173,12 @@ export class TempBot implements OnApplicationBootstrap {
       )
       .reverse();
 
-    return ctx.replyWithMarkdown([`*${item.title}:*`, ...message].join('\n'), {
-      reply_to_message_id: message_id,
-      allow_sending_without_reply: true,
-    });
+    return ctx
+      .replyWithHTML([`<b>${item.title}:</b>`, ...message].join('\n'), {
+        reply_to_message_id: message_id,
+        allow_sending_without_reply: true,
+      })
+      .catch((err) => ctx.reply(`Ошибка.\n${err.message}`));
   }
 
   getTemps(startDate: string, endDate: string) {
@@ -194,9 +193,9 @@ export class TempBot implements OnApplicationBootstrap {
   }
 
   getTemp(device: string, limit = 6) {
-    const endDate = new Date();
-    const startDate = new Date(endDate);
-    startDate.setDate(endDate.getDate() - 1);
+    // const endDate = new Date();
+    // const startDate = new Date(endDate);
+    // startDate.setDate(endDate.getDate() - 1);
 
     return this.tempModel
       .find({
@@ -210,6 +209,21 @@ export class TempBot implements OnApplicationBootstrap {
       .limit(limit);
   }
 
+  alarmTemp(value) {
+    if (value < ALARM_TEMP) {
+      ALARM_LIST.forEach((id) =>
+        this.bot.telegram
+          .sendMessage(
+            id,
+            `Тревога!\nТемпература теплоносителя ${value.toFixed(
+              1,
+            )} ℃  менее чем ${ALARM_TEMP} ℃.\nДля инф. смотрите /temp`,
+          )
+          .catch((err) => console.log(err.message)),
+      );
+    }
+  }
+
   onApplicationBootstrap() {
     this.bot
       .launch()
@@ -218,6 +232,7 @@ export class TempBot implements OnApplicationBootstrap {
       })
       .catch((err: Error) => {
         this.logger.error(err.message);
+        return this.onApplicationBootstrap();
       });
 
     // Enable graceful stop
