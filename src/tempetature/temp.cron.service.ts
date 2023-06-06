@@ -4,6 +4,7 @@ import {
   ALARM_TEMP,
   META,
   SENSOR_TEMP_HOT,
+  SENSOR_TEMP_OUTDOOR,
   TOPIC_HWMON,
   TOPIC_TEMP_SENSOR,
 } from '../const';
@@ -37,6 +38,8 @@ export class TempCronService {
   tempCron() {
     const createDate = new Date();
     createDate.setSeconds(0, 0);
+    // темп на улице
+    const tempOut = this.store[SENSOR_TEMP_OUTDOOR][0];
     Object.entries(this.store).forEach((prop) => {
       const [key, items = []] = prop;
       const value =
@@ -51,7 +54,7 @@ export class TempCronService {
         })
         .catch((err) => this.logger.error(err.message));
 
-      if (key === SENSOR_TEMP_HOT && value < ALARM_TEMP) {
+      if (key === SENSOR_TEMP_HOT && value < ALARM_TEMP && tempOut < 5) {
         this.botService.alarmTemp(value);
       }
       this.store[key] = [];
