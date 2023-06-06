@@ -55,11 +55,10 @@ export class ScheduleService {
   }
 
   createCronTime(hours: number, minutes: number, waitMinutes = 0) {
-    const date = new Date(
-      hours * 60 * 60 * 1000 + (minutes + waitMinutes) * 60 * 1000,
-    );
-    const h = date.getUTCHours();
-    const m = date.getUTCMinutes();
+    const date = new Date();
+    date.setHours(hours, minutes + waitMinutes, 0, 0);
+    const h = date.getHours();
+    const m = date.getMinutes();
     return `0 ${m} ${h} * * *`;
   }
 
