@@ -6,6 +6,7 @@ import {
   SENSOR_TEMP_HOT,
   SENSOR_TEMP_OUTDOOR,
   TOPIC_HWMON,
+  TOPIC_RAIN_SENSOR,
   TOPIC_TEMP_SENSOR,
 } from '../const';
 import { InjectModel } from '@nestjs/mongoose';
@@ -13,6 +14,7 @@ import { Temp, TempDocument } from './temp.schema';
 import { Model } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TempBotService } from './temp.bot.service';
+import { RainService } from '../rain/rain.service';
 
 @Injectable()
 export class TempCronService {
@@ -23,14 +25,19 @@ export class TempCronService {
     @InjectModel(Temp.name) private readonly tempModel: Model<TempDocument>,
     private readonly mqqtService: MqttService,
     private readonly botService: TempBotService,
+    private readonly rainService: RainService,
   ) {
     mqqtService.client.subscribe(
-      [`${TOPIC_TEMP_SENSOR}/+`, `${TOPIC_HWMON}/+`],
+      [`${TOPIC_TEMP_SENSOR}/+`, `${TOPIC_HWMON}/+`, TOPIC_RAIN_SENSOR],
       () => undefined,
     );
-    mqqtService.client.on('message', (topic: string, data) =>
-      this.onMessage(topic, data.toString()),
-    );
+    mqqtService.client.on('message', (topic: string, data) => {
+      if (topic === TOPIC_RAIN_SENSOR) {
+        this.onMessageRain(topic, data.toString());
+      } else {
+        this.onMessageTemp(topic, data.toString());
+      }
+    });
   }
 
   @Cron(CronExpression.EVERY_10_MINUTES) // каждые 10 минут
@@ -61,10 +68,22 @@ export class TempCronService {
     });
   }
 
-  onMessage(topic: string, message: string) {
+  onMessageTemp(topic: string, message: string) {
     const [key] = topic.split('/').reverse();
     //console.log(key, message);
     this.store[key] = this.store[key] || [];
     this.store[key].push(parseFloat(message));
+  }
+
+  private onMessageRain(topic: string, message: string) {
+    this.tempModel
+      .create({
+        createDate: new Date(),
+        device: topic,
+        title: 'Датчик дождя',
+        value: message,
+      })
+      .then(() => (this.rainService.value = message === '1'))
+      .catch((err) => this.logger.error(err.message));
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { connect, Client } from 'mqtt';
+import { RainService } from '../rain/rain.service';
 
 const MQQT = {
   //connect: 'ws://192.168.1.5:18883/mqtt',
@@ -12,7 +13,7 @@ export class MqttService {
   public client: Client;
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  constructor() {
+  constructor(private rainService: RainService) {
     this.connect();
   }
 
@@ -25,7 +26,11 @@ export class MqttService {
   }
 
   activeTopic(topic: string, value: boolean) {
-    this.client.publish(`${topic}/on`, value ? '1' : '0');
+    if (this.rainService.value) {
+      this.client.publish(`${topic}/on`, '0');
+    } else {
+      this.client.publish(`${topic}/on`, value ? '1' : '0');
+    }
   }
 
   connect() {

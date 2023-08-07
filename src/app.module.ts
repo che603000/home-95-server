@@ -8,6 +8,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TempModule } from './tempetature/temp.module';
+import { RainModule } from './rain/rain.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TempModule } from './tempetature/temp.module';
     TaskModule,
     MqttModule,
     TempModule,
+    RainModule,
   ],
   controllers: [AppController],
   providers: [AppService],

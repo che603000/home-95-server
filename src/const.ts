@@ -1,5 +1,7 @@
 export const META = new Map<string, Record<string, any>>();
 
+export const TOPIC_RAIN_SENSOR = '/devices/wb-mr6c_159/controls/Input 6';
+//export const TOPIC_RAIN_SENSOR = '/devices/wb-mr6c_159/controls/K1';
 export const TOPIC_TEMP_SENSOR = '/devices/wb-w1/controls';
 export const SENSOR_TEMP_OUTDOOR = '28-011831bb08ff'; // темп улица
 export const SENSOR_TEMP_HOT = '28-0617000489ff'; // подача отопления

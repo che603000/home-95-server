@@ -16,6 +16,7 @@ export class ScheduleService {
   addTaskTime(id: string, time: string, wait: number, topic: string) {
     try {
       const [hours, minutes] = time.split(':').map((t) => parseInt(t));
+      // start task
       this.addCronJob(
         `${id}:start`,
         this.createCronTime(hours, minutes),
@@ -23,6 +24,7 @@ export class ScheduleService {
           this.mqqtService.activeTopic(topic, true);
         },
       );
+      // stop task
       this.addCronJob(
         `${id}:stop`,
         this.createCronTime(hours, minutes, wait),
